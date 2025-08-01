@@ -40,9 +40,10 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
     ## IConfigurer
     def update_config(self, config):
         """
-        Adds templates.
+        Adds templates and static assets.
         """
         toolkit.add_template_directory(config, 'theme/templates')
+        toolkit.add_public_directory(config, 'public')
 
     ## IPackageController
     def after_dataset_create(self, context, pkg_dict):
