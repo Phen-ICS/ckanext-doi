@@ -204,10 +204,59 @@ def build_metadata_dict(pkg_dict):
         errors['rightsList'] = e
 
     # DESCRIPTIONS
-    # use package notes
-    optional['descriptions'] = [
-        {'descriptionType': 'Other', 'description': pkg_dict.get('notes', '')}
-    ]
+    # use package notes and all extra fields as descriptions
+    descriptions = []
+    
+    # Add package notes as description if not empty
+    notes = pkg_dict.get('notes', '')
+    if notes and notes.strip():
+        descriptions.append({
+            'descriptionType': 'Abstract',
+            'description': notes.strip()
+        })
+    
+    # Add all extra fields as descriptions
+    # Extras are stored as list of dicts: [{'key': 'field_name', 'value': 'field_value'}, ...]
+    try:
+        extras = pkg_dict.get('extras', [])
+        for extra in extras:
+            key = extra.get('key', '').strip()
+            value = extra.get('value', '')
+            
+            # Skip empty values and deleted extras
+            if not key or not value or extra.get('state') == 'deleted':
+                continue
+            
+            # Convert value to string if it's not already
+            if not isinstance(value, str):
+                value = str(value)
+            
+            # Skip empty string values
+            if not value.strip():
+                continue
+            
+            # Format field name: replace underscores/hyphens with spaces, capitalize
+            # Handle numbered fields (e.g., "related_identifier #1" -> "Related Identifier #1")
+            # Split by '#' to preserve numbering format
+            if '#' in key:
+                parts = key.split('#', 1)
+                formatted_key = parts[0].replace('_', ' ').replace('-', ' ').strip().title()
+                formatted_key = f"{formatted_key} #{parts[1].strip()}"
+            else:
+                formatted_key = key.replace('_', ' ').replace('-', ' ').strip().title()
+            
+            # Create description text: "Field Name: Field Value"
+            description_text = f"{formatted_key}: {value.strip()}"
+            
+            descriptions.append({
+                'descriptionType': 'Other',
+                'description': description_text
+            })
+    except Exception as e:
+        errors['descriptions'] = e
+        log.warning(f"Error processing extras for descriptions: {e}")
+    
+    optional['descriptions'] = descriptions
 
     # GEOLOCATIONS
     # nothing relevant in default schema
