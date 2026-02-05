@@ -51,18 +51,6 @@ Dataset package fields and CKAN config settings are mapped to the DataCite Schem
 
 See [`metadata.py`](https://github.com/NaturalHistoryMuseum/ckanext-doi/blob/main/ckanext/doi/lib/metadata.py) for full mapping details.
 
-## Beta Badge
-
-This extension includes a beta warning badge that appears whenever a DOI is displayed on a dataset. The badge serves as a visual indicator that the DOI functionality is still in beta testing phase. The badge appears:
-
-- On dataset pages where a DOI is present
-- On resource pages where the parent dataset has a DOI
-- In citation sections
-
-The beta badge is styled with an orange background, warning icon, and subtle pulse animation to draw attention while maintaining a professional appearance.
-
-<!--overview-end-->
-
 # Installation
 
 <!--installation-start-->
