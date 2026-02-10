@@ -58,28 +58,23 @@ Path variables used below:
 - `$INSTALL_FOLDER` (i.e. where CKAN is installed), e.g. `/usr/lib/ckan/default`
 - `$CONFIG_FILE`, e.g. `/etc/ckan/default/development.ini`
 
-## Installing from PyPI
-
-```shell
-pip install ckanext-doi
-```
-
 ## Installing from source
 
 1. Clone the repository into the `src` folder:
    ```shell
    cd $INSTALL_FOLDER/src
-   git clone https://github.com/NaturalHistoryMuseum/ckanext-doi.git
+   git clone git@serv-gitlab.igbmc.u-strasbg.fr:ics/ckanext-doi.git
    ```
 
 2. Activate the virtual env:
    ```shell
-   . $INSTALL_FOLDER/bin/activate
+   source /usr/lib/ckan/default/bin/activate
    ```
 
 3. Install via pip:
    ```shell
-   pip install $INSTALL_FOLDER/src/ckanext-doi
+   cd ckanext-doi
+   pip install -e .
    ```
 
 ### Installing in editable mode
