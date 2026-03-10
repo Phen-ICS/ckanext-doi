@@ -43,7 +43,12 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
         Adds templates and static assets.
         """
         toolkit.add_template_directory(config, 'theme/templates')
-        toolkit.add_public_directory(config, 'public')
+        try:
+            toolkit.add_public_directory(config, 'public')
+        except AssertionError:
+            # CKAN 2.11 can raise an assertion in legacy i18n/lang handling
+            # while resolving add_public_directory at startup.
+            log.warning('Skipping add_public_directory for ckanext-doi on this CKAN runtime')
 
     ## IPackageController
     def after_dataset_create(self, context, pkg_dict):

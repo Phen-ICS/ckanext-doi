@@ -22,16 +22,21 @@ def doi():
 
 @doi.command(name='initdb')
 def init_db():
-    if not model.package_table.exists():
+    engine = Session.get_bind() or model.meta.engine
+    if engine is None:
+        click.secho('Could not determine database engine', fg='red')
+        raise click.Abort()
+
+    if not model.package_table.exists(bind=engine):
         click.secho(
             'Package table must exist before initialising the DOI table', fg='red'
         )
         raise click.Abort()
 
-    if doi_model.doi_table.exists():
+    if doi_model.doi_table.exists(bind=engine):
         click.secho('DOI table already exists', fg='green')
     else:
-        doi_model.doi_table.create()
+        doi_model.doi_table.create(bind=engine)
         click.secho('DOI table created', fg='green')
 
 
