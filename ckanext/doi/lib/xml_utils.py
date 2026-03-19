@@ -57,8 +57,14 @@ def create_contributor(
         'nameType': 'Organizational' if is_org else 'Personal',
     }
     if not is_org:
-        contributor['familyName'] = family_name
-        contributor['givenName'] = given_name
+        if family_name is not None:
+            family_name = str(family_name).strip()
+            if family_name:
+                contributor['familyName'] = family_name
+        if given_name is not None:
+            given_name = str(given_name).strip()
+            if given_name:
+                contributor['givenName'] = given_name
     if contributor_type is not None:
         contributor['contributorType'] = contributor_type
     if affiliations is not None:

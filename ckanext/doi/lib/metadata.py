@@ -97,11 +97,12 @@ def build_metadata_dict(pkg_dict):
     # want to know
     author = pkg_dict.get('author')
     maintainer = pkg_dict.get('maintainer')
-    if author is not None:
+    # Only add contributors if values are non-empty (avoid DataCite minLength errors)
+    if author and str(author).strip():
         optional['contributors'].append(
             {'contributor_type': 'Researcher', 'full_name': author}
         )
-    if maintainer is not None:
+    if maintainer and str(maintainer).strip():
         optional['contributors'].append(
             {'contributor_type': 'DataManager', 'full_name': maintainer}
         )
@@ -158,7 +159,19 @@ def build_metadata_dict(pkg_dict):
         errors['alternateIdentifiers'] = e
 
     # RELATED IDENTIFIERS
-    # nothing relevant in default schema
+    # map CKAN dataset source URL to DataCite IsDerivedFrom relation
+    try:
+        source_url = pkg_dict.get('url')
+        if source_url and str(source_url).strip():
+            optional['relatedIdentifiers'] = [
+                {
+                    'relatedIdentifierType': 'URL',
+                    'relationType': 'IsDerivedFrom',
+                    'relatedIdentifier': str(source_url).strip(),
+                }
+            ]
+    except Exception as e:
+        errors['relatedIdentifiers'] = e
 
     # SIZES
     # sum up given sizes from resources in the package and convert from bytes to kilobytes
@@ -222,6 +235,12 @@ def build_metadata_dict(pkg_dict):
         for extra in extras:
             key = extra.get('key', '').strip()
             value = extra.get('value', '')
+
+            key_lower = key.lower()
+            # Internal extras managed by FAIR3R/DOI should not be mirrored into
+            # DataCite descriptions.
+            if key_lower.startswith('datacite.') or key_lower == 'fdf_output_json':
+                continue
             
             # Skip empty values and deleted extras
             if not key or not value or extra.get('state') == 'deleted':
