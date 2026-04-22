@@ -97,4 +97,4 @@ publish:pypi:
     - when: never
   script:
     - test -d dist && ls -l dist
-    - twine upload --non-interactive --skip-existing dist/*
+    - twine upload --non-interactive dist/*
