@@ -92,8 +92,8 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
                 client.mint_doi(doi.identifier, package_id)
                 try:
                     toolkit.h.flash_success('DataCite DOI created')
-                except:
-                    pass # outside context
+                except Exception:
+                    log.debug('flash_success unavailable outside request context')
             else:
                 same = client.check_for_update(doi.identifier, xml_dict)
                 if not same:
@@ -101,8 +101,8 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
                     client.set_metadata(doi.identifier, xml_dict)
                     try:
                         toolkit.h.flash_success('DataCite DOI metadata updated')
-                    except:
-                        pass # outside context
+                    except Exception:
+                        log.debug('flash_success unavailable outside request context')
 
         return pkg_dict
 

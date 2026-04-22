@@ -5,7 +5,7 @@
 # Created by the Natural History Museum in London, UK
 
 import logging
-import random
+import secrets
 import string
 from datetime import datetime as dt
 
@@ -88,7 +88,7 @@ class DataciteClient:
 
         while attempts > 0:
             # generate a random 8 character identifier
-            identifier = ''.join(random.choice(valid_characters) for _ in range(8))
+            identifier = ''.join(secrets.choice(valid_characters) for _ in range(8))
             # form the doi using the prefix
             doi = f'{self.prefix}/{identifier}'
 
