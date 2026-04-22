@@ -1,0 +1,100 @@
+# Pipeline stages
+stages:
+  - validate
+  - build
+  - publish
+
+# Global variables
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+
+# Workflow
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: always
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+    - when: never
+
+# Pip cache
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip
+
+# Default Python image and bootstrap
+default:
+  image: python:3.10-alpine
+  tags:
+    - ics-docker
+  before_script:
+    - python -m pip install --upgrade pip setuptools wheel
+
+# Linting (ruff)
+lint:ruff:
+  stage: validate
+  script:
+    - pip install ruff
+    - ruff check ckanext tests
+
+# Format check (ruff format)
+lint:ruff-format:
+  stage: validate
+  script:
+    - pip install ruff
+    - ruff format --check ckanext tests
+
+# Security scan (bandit)
+security:bandit:
+  stage: validate
+  script:
+    - pip install bandit
+    - bandit -r ckanext -x tests
+
+# Python dependency audit
+security:pip-audit:
+  stage: validate
+  allow_failure: true
+  script:
+    - pip install pip-audit
+    - pip-audit
+
+# Build Python package
+build:package:
+  stage: build
+  script:
+    - pip install build twine
+    - python -m build
+    - twine check dist/*
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - dist/
+
+# Publish python package to our gitlab PyPI (manual)
+publish:pypi:
+  stage: publish
+  image: python:3.10-slim
+  needs:
+    - build:package
+  variables:
+    TWINE_USERNAME: "gitlab-ci-token"
+    TWINE_PASSWORD: "$CI_JOB_TOKEN"
+    TWINE_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+  before_script:
+    - python -m pip install --upgrade pip setuptools wheel twine
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+    - when: never
+  script:
+    - test -d dist && ls -l dist
+    - twine upload --non-interactive --skip-existing dist/*
