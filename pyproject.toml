@@ -1,5 +1,5 @@
 [project]
-name = "ckanext-doi"
+name = "ckanext-fair3r-doi"
 version = "3.1.17"
 description = "A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service."
 readme = "README.md"
