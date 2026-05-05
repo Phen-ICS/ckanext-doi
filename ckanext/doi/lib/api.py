@@ -11,7 +11,12 @@ from datetime import datetime as dt
 
 import xmltodict
 from ckan.plugins import toolkit
-from datacite import DataCiteMDSClient, schema42
+from datacite import DataCiteMDSClient
+
+try:
+    from datacite import schema45 as schema42
+except ImportError:
+    from datacite import schema42
 from datacite.errors import DataCiteError, DataCiteNotFoundError
 
 from ckanext.doi.lib.helpers import doi_test_mode
@@ -135,7 +140,9 @@ class DataciteClient:
         :param xml_dict: the metadata as an xml dict (generated from build_xml_dict)
         :returns:
         """
-        xml_dict['identifiers'] = [{'identifierType': 'DOI', 'identifier': doi}]
+        # DataCite schema45 expects top-level `doi` instead of legacy `identifiers`.
+        xml_dict.pop('identifiers', None)
+        xml_dict['doi'] = doi
 
         # check that the data is valid, this will raise a JSON schema exception if there are issues
         schema42.validator.validate(xml_dict)

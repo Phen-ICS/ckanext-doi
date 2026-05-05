@@ -323,20 +323,44 @@ def build_metadata_dict(pkg_dict):
 
 def build_xml_dict(metadata_dict):
     """
-    Builds a dictionary that can be passed directly to datacite.schema42.tostring() to
-    generate xml. Previously named metadata_to_xml but renamed as it's not actually
+    Builds a dictionary that can be passed directly to the configured DataCite schema
+    serializer to generate xml. Previously named metadata_to_xml but renamed as it's
+    not actually
     producing any xml, it's just formatting the metadata so a separate function can then
     generate the xml.
 
     :param metadata_dict: a dict of metadata generated from build_metadata_dict
-    :returns: dict that can be passed directly to datacite.schema42.tostring()
+    :returns: dict that can be passed directly to the DataCite serializer
     """
 
+    def _normalize_schema_keys(value):
+        if isinstance(value, list):
+            return [_normalize_schema_keys(item) for item in value]
+
+        if isinstance(value, dict):
+            normalized = {}
+            key_map = {
+                'schemeURI': 'schemeUri',
+                'valueURI': 'valueUri',
+                'rightsURI': 'rightsUri',
+            }
+            for key, item in value.items():
+                normalized[key_map.get(key, key)] = _normalize_schema_keys(item)
+            return normalized
+
+        return value
+
     # required fields first (DOI will be added later)
+    publisher = metadata_dict.get('publisher')
+    if isinstance(publisher, dict):
+        publisher_value = dict(publisher)
+    else:
+        publisher_value = {'name': publisher}
+
     xml_dict = {
         'creators': [],
         'titles': metadata_dict.get('titles', []),
-        'publisher': metadata_dict.get('publisher'),
+        'publisher': publisher_value,
         'publicationYear': str(metadata_dict.get('publicationYear')),
         'types': {
             'resourceType': metadata_dict.get('resourceType'),
@@ -344,6 +368,18 @@ def build_xml_dict(metadata_dict):
         },
         'schemaVersion': 'http://datacite.org/schema/kernel-4',
     }
+
+    publisher_identifier = metadata_dict.get('publisherIdentifier')
+    publisher_identifier_scheme = metadata_dict.get('publisherIdentifierScheme')
+    publisher_scheme_uri = metadata_dict.get('schemeUri') or metadata_dict.get(
+        'schemeURI'
+    )
+    if publisher_identifier:
+        xml_dict['publisher']['publisherIdentifier'] = publisher_identifier
+    if publisher_identifier_scheme:
+        xml_dict['publisher']['publisherIdentifierScheme'] = publisher_identifier_scheme
+    if publisher_scheme_uri:
+        xml_dict['publisher']['schemeUri'] = publisher_scheme_uri
 
     for creator in metadata_dict.get('creators', []):
         xml_dict['creators'].append(xml_utils.create_contributor(**creator))
@@ -391,4 +427,4 @@ def build_xml_dict(metadata_dict):
     for plugin in PluginImplementations(IDoi):
         xml_dict = plugin.build_xml_dict(metadata_dict, xml_dict)
 
-    return xml_dict
+    return _normalize_schema_keys(xml_dict)

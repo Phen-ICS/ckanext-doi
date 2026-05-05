@@ -117,12 +117,7 @@ METADATA_DICT = {
 
 # minimal example from https://datacite.readthedocs.io/en/latest
 XML_DICT = {
-    'identifiers': [
-        {
-            'identifierType': 'DOI',
-            'identifier': '10.4124/abcd1234',
-        }
-    ],
+    'doi': '10.4124/abcd1234',
     'creators': [
         {'name': 'Smith, John'},
     ],
@@ -131,7 +126,7 @@ XML_DICT = {
             'title': 'Minimal Test Case',
         }
     ],
-    'publisher': 'Invenio Software',
+    'publisher': {'name': 'Invenio Software'},
     'publicationYear': '2015',
     'types': {'resourceType': 'Dataset', 'resourceTypeGeneral': 'Dataset'},
     'schemaVersion': 'http://datacite.org/schema/kernel-4',
