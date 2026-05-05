@@ -5,7 +5,11 @@
 # Created by the Natural History Museum in London, UK
 
 import pytest
-from datacite import schema42
+
+try:
+    from datacite import schema45 as schema42
+except ImportError:
+    from datacite import schema42
 
 from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict
 
@@ -44,7 +48,51 @@ def test_handles_bad_data():
 def test_generate_xml():
     xml_dict = build_xml_dict(constants.METADATA_DICT)
     # build_xml_dict does not add a DOI
-    xml_dict['identifiers'] = [
-        {'identifierType': 'DOI', 'identifier': '10.0000/this-would-be-a-doi'}
-    ]
+    xml_dict['doi'] = '10.0000/this-would-be-a-doi'
     assert schema42.validate(xml_dict)
+
+
+def test_generate_xml_includes_publisher_and_affiliation_identifiers():
+    metadata_dict = {
+        **constants.METADATA_DICT,
+        'publisherIdentifier': 'https://ror.org/03cjqqq10',
+        'publisherIdentifierScheme': 'ROR',
+        'schemeURI': 'https://ror.org/',
+        'creators': [
+            {
+                'full_name': 'Bouri, Laurent',
+                'given_name': 'Laurent',
+                'family_name': 'Bouri',
+                'identifiers': [
+                    {
+                        'identifier': 'https://orcid.org/0000-0002-2297-1559',
+                        'scheme': 'ORCID',
+                        'scheme_uri': 'https://orcid.org/',
+                    }
+                ],
+                'affiliation_objects': [
+                    {
+                        'affiliation': 'Institut Clinique de la Souris',
+                        'affiliationIdentifier': 'https://ror.org/03cjqqq10',
+                        'affiliationIdentifierScheme': 'ROR',
+                        'schemeURI': 'https://ror.org/',
+                    }
+                ],
+            }
+        ],
+    }
+
+    xml_dict = build_xml_dict(metadata_dict)
+    xml_dict['doi'] = '10.0000/this-would-be-a-doi'
+
+    assert schema42.validate(xml_dict)
+
+    xml_doc = schema42.tostring(xml_dict)
+    if isinstance(xml_doc, bytes):
+        xml_doc = xml_doc.decode('utf-8')
+
+    assert 'publisherIdentifier="https://ror.org/03cjqqq10"' in xml_doc
+    assert 'publisherIdentifierScheme="ROR"' in xml_doc
+    assert 'schemeURI="https://ror.org/"' in xml_doc
+    assert 'affiliationIdentifier="https://ror.org/03cjqqq10"' in xml_doc
+    assert 'affiliationIdentifierScheme="ROR"' in xml_doc

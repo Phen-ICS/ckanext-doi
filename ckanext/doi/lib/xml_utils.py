@@ -12,6 +12,7 @@ def create_contributor(
     is_org=False,
     contributor_type=None,
     affiliations=None,
+    affiliation_objects=None,
     identifiers=None,
 ):
     """
@@ -28,6 +29,8 @@ def create_contributor(
     :param contributor_type: the contributor type to set
     :param affiliations: affiliations of the contributor, either a string or list of
         strings
+    :param affiliation_objects: optional list of affiliation dicts that may include
+        DataCite affiliation identifiers
     :param identifiers: a list of dicts with "identifier", "scheme", and (optionally)
         "scheme_uri"
     :returns: a dict
@@ -67,12 +70,48 @@ def create_contributor(
                 contributor['givenName'] = given_name
     if contributor_type is not None:
         contributor['contributorType'] = contributor_type
-    if affiliations is not None:
-        contributor['affiliations'] = []
-        if isinstance(affiliations, str):
-            affiliations = [affiliations]
-        for affiliation in affiliations:
-            contributor['affiliations'].append({'affiliation': affiliation})
+
+    def _normalize_affiliation(affiliation):
+        if isinstance(affiliation, dict):
+            name = str(
+                affiliation.get('name') or affiliation.get('affiliation') or ''
+            ).strip()
+            if not name:
+                return None
+            normalized = {'name': name}
+            if affiliation.get('affiliationIdentifier'):
+                normalized['affiliationIdentifier'] = affiliation[
+                    'affiliationIdentifier'
+                ]
+            if affiliation.get('affiliationIdentifierScheme'):
+                normalized['affiliationIdentifierScheme'] = affiliation[
+                    'affiliationIdentifierScheme'
+                ]
+            scheme_uri = affiliation.get('schemeUri') or affiliation.get('schemeURI')
+            if scheme_uri:
+                normalized['schemeUri'] = scheme_uri
+            return normalized
+
+        name = str(affiliation).strip()
+        if not name:
+            return None
+        return {'name': name}
+
+    source_affiliations = affiliation_objects
+    if source_affiliations is None:
+        source_affiliations = affiliations
+
+    if source_affiliations is not None:
+        contributor['affiliation'] = []
+        if isinstance(source_affiliations, (str, dict)):
+            source_affiliations = [source_affiliations]
+        for affiliation in source_affiliations:
+            normalized_affiliation = _normalize_affiliation(affiliation)
+            if normalized_affiliation:
+                contributor['affiliation'].append(normalized_affiliation)
+        if not contributor['affiliation']:
+            del contributor['affiliation']
+
     if identifiers:
         contributor['nameIdentifiers'] = []
         for _id in identifiers:
@@ -82,7 +121,10 @@ def create_contributor(
                 'nameIdentifier': _id['identifier'],
                 'nameIdentifierScheme': _id['scheme'],
             }
-            if 'scheme_uri' in _id:
-                id_dict['schemeURI'] = _id['scheme_uri']
+            scheme_uri = (
+                _id.get('scheme_uri') or _id.get('schemeURI') or _id.get('schemeUri')
+            )
+            if scheme_uri:
+                id_dict['schemeUri'] = scheme_uri
             contributor['nameIdentifiers'].append(id_dict)
     return contributor
