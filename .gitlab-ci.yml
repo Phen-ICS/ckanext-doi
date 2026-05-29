@@ -3,6 +3,7 @@ stages:
   - validate
   - build
   - publish
+  - cleanup
 
 # Global variables
 variables:
@@ -98,3 +99,112 @@ publish:pypi:
   script:
     - test -d dist && ls -l dist
     - twine upload --non-interactive dist/*
+
+# Publish python package preview to our gitlab PyPI (manual)
+# Publishes the current version from setup.py as-is; deleted from registry after validation.
+publish:pypi:preview:
+  stage: publish
+  image: python:3.10-slim
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    TWINE_USERNAME: "gitlab-ci-token"
+    TWINE_PASSWORD: "$CI_JOB_TOKEN"
+    TWINE_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+  before_script:
+    - python3 -m pip install --upgrade pip setuptools wheel build twine
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - when: never
+  script:
+    - rm -rf dist/
+    - python3 -m build
+    - twine check dist/*
+    - |
+      python3 - <<'EOF'
+      import json, os, pathlib, tomllib, urllib.request, urllib.error
+
+      version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+      api     = os.environ["CI_API_V4_URL"]
+      project = os.environ["CI_PROJECT_ID"]
+      token   = os.environ["CI_JOB_TOKEN"]
+      headers = {"JOB-TOKEN": token}
+
+      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_version={version}&package_type=pypi"
+      req = urllib.request.Request(url, headers=headers)
+      with urllib.request.urlopen(req) as r:
+          pkgs = json.load(r)
+
+      if pkgs:
+          pkg_id = pkgs[0]["id"]
+          print(f"Deleting existing preview package {version} (id={pkg_id}) before re-upload...")
+          del_req = urllib.request.Request(f"{api}/projects/{project}/packages/{pkg_id}", headers=headers, method="DELETE")
+          try:
+              urllib.request.urlopen(del_req)
+          except urllib.error.HTTPError as e:
+              raise SystemExit(f"DELETE failed: {e.code} {e.reason}")
+          print("Deleted.")
+      else:
+          print(f"No existing preview package {version} found, proceeding with upload.")
+      EOF
+    - twine upload --non-interactive dist/*
+
+# Trigger deploy pipeline in fair3r-docker-alt starting from integration (manual)
+# Launches the full pipeline: ansible_lint -> deploy_integration -> deploy_validation.
+trigger:fair3r-docker-alt:integration:
+  stage: publish
+  needs:
+    - job: publish:pypi:preview
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - when: never
+  trigger:
+    project: ics/fair3r-docker-alt
+    branch: ckan_tests
+    strategy: depend
+
+# Delete preview package from registry after validation (manual)
+# Must be triggered manually AFTER deploy_validation has run, to ensure
+# the preview package is still available when Ansible installs it.
+cleanup:pypi:preview:
+  stage: cleanup
+  image: python:3.10-slim
+  needs:
+    - job: trigger:fair3r-docker-alt:integration
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - when: never
+  script:
+    - |
+      python3 - <<'EOF'
+      import json, os, pathlib, tomllib, urllib.request, urllib.error
+
+      version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+      api     = os.environ["CI_API_V4_URL"]
+      project = os.environ["CI_PROJECT_ID"]
+      token   = os.environ["CI_JOB_TOKEN"]
+      headers = {"JOB-TOKEN": token}
+
+      print(f"Deleting preview package {version} from registry...")
+
+      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_version={version}&package_type=pypi"
+      req = urllib.request.Request(url, headers=headers)
+      with urllib.request.urlopen(req) as r:
+          pkgs = json.load(r)
+
+      if not pkgs:
+          raise SystemExit(f"Package not found in registry: {version}")
+
+      pkg_id = pkgs[0]["id"]
+      print(f"Found package ID: {pkg_id}")
+
+      del_req = urllib.request.Request(f"{api}/projects/{project}/packages/{pkg_id}", headers=headers, method="DELETE")
+      try:
+          urllib.request.urlopen(del_req)
+      except urllib.error.HTTPError as e:
+          raise SystemExit(f"DELETE failed: {e.code} {e.reason}")
+
+      print(f"Package {version} deleted from registry.")
+      EOF
