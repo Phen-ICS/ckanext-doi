@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-fair3r-doi"
-version = "3.2.0"
+version = "3.2.1"
 description = "A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service."
 readme = "README.md"
 requires-python = ">=3.6"
@@ -22,14 +22,14 @@ dependencies = [
     "jsonschema==3.0.0",
     "xmltodict==0.12.0",
     "datacite==1.4.0",
-    "ckantools>=0.4.1"
+    "ckantools==0.5.0"
 ]
 
 [project.optional-dependencies]
 test = [
     "mock",
-    "pytest>=4.6.5",
-    "pytest-cov>=2.7.1",
+    "pytest==7.4.4",
+    "pytest-cov==4.1.0",
     "coveralls"
 ]
 

@@ -91,22 +91,6 @@ def build_metadata_dict(pkg_dict):
     except Exception as e:
         errors['subjects'] = e
 
-    # CONTRIBUTORS
-    # use the author and maintainer; no splitting or parsing for either
-    # no try/except for this because it's just a simple .get() and if that doesn't work then we
-    # want to know
-    author = pkg_dict.get('author')
-    maintainer = pkg_dict.get('maintainer')
-    # Only add contributors if values are non-empty (avoid DataCite minLength errors)
-    if author and str(author).strip():
-        optional['contributors'].append(
-            {'contributor_type': 'Researcher', 'full_name': author}
-        )
-    if maintainer and str(maintainer).strip():
-        optional['contributors'].append(
-            {'contributor_type': 'DataManager', 'full_name': maintainer}
-        )
-
     # DATES
     # created, updated, and doi publish date
     date_errors = {}
