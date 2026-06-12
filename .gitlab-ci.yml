@@ -41,21 +41,21 @@ lint:ruff:
   stage: validate
   script:
     - pip install ruff
-    - ruff check ckanext tests
+    - ruff check ckanext
 
 # Format check (ruff format)
 lint:ruff-format:
   stage: validate
   script:
     - pip install ruff
-    - ruff format --check ckanext tests
+    - ruff format --check ckanext
 
 # Security scan (bandit)
 security:bandit:
   stage: validate
   script:
     - pip install bandit
-    - bandit -r ckanext -x tests
+    - bandit -r ckanext -x ckanext/doi/tests
 
 # Python dependency audit
 security:pip-audit:
@@ -81,7 +81,7 @@ build:package:
 # Publish python package to our gitlab PyPI (manual)
 publish:pypi:
   stage: publish
-  image: python:3.10-slim
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
   needs:
     - build:package
   variables:
@@ -104,7 +104,7 @@ publish:pypi:
 # Publishes the current version from setup.py as-is; deleted from registry after validation.
 publish:pypi:preview:
   stage: publish
-  image: python:3.10-slim
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     TWINE_USERNAME: "gitlab-ci-token"
@@ -122,9 +122,9 @@ publish:pypi:preview:
     - twine check dist/*
     - |
       python3 - <<'EOF'
-      import json, os, pathlib, tomllib, urllib.request, urllib.error
+      import json, os, pathlib, re, urllib.request, urllib.error
 
-      version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+      version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pathlib.Path("pyproject.toml").read_text()).group(1)
       api     = os.environ["CI_API_V4_URL"]
       project = os.environ["CI_PROJECT_ID"]
       token   = os.environ["CI_JOB_TOKEN"]
@@ -161,7 +161,7 @@ trigger:fair3r-docker-alt:integration:
     - when: never
   trigger:
     project: ics/fair3r-docker-alt
-    branch: ckan_tests
+    branch: main
     strategy: depend
 
 # Delete preview package from registry after validation (manual)
@@ -169,7 +169,7 @@ trigger:fair3r-docker-alt:integration:
 # the preview package is still available when Ansible installs it.
 cleanup:pypi:preview:
   stage: cleanup
-  image: python:3.10-slim
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
   needs:
     - job: trigger:fair3r-docker-alt:integration
   rules:
@@ -179,9 +179,9 @@ cleanup:pypi:preview:
   script:
     - |
       python3 - <<'EOF'
-      import json, os, pathlib, tomllib, urllib.request, urllib.error
+      import json, os, pathlib, re, urllib.request, urllib.error
 
-      version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+      version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pathlib.Path("pyproject.toml").read_text()).group(1)
       api     = os.environ["CI_API_V4_URL"]
       project = os.environ["CI_PROJECT_ID"]
       token   = os.environ["CI_JOB_TOKEN"]

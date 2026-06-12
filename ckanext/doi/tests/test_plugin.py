@@ -10,7 +10,7 @@ from ckanext.doi.model.crud import DOIQuery
 
 @pytest.mark.filterwarnings('ignore::sqlalchemy.exc.SADeprecationWarning')
 @pytest.mark.ckan_config('ckan.plugins', 'doi')
-@pytest.mark.ckan_config('ckanext.doi.prefix', 'testing')
+@pytest.mark.ckan_config('ckanext.doi.prefix', '10.12345')
 @pytest.mark.usefixtures('with_doi_table', 'with_plugins')
 class TestDOIPlugin:
     def test_after_dataset_create(self):

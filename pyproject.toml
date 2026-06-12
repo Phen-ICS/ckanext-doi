@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-fair3r-doi"
-version = "3.2.1"
+version = "3.2.2"
 description = "A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service."
 readme = "README.md"
 requires-python = ">=3.6"
@@ -51,11 +51,12 @@ build-backend = "setuptools.build_meta"
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "docs"]
+exclude = ["docs"]
 
 [tool.setuptools.package-data]
 "ckanext.doi.theme" = ["*", "**/*"]
 "ckanext.doi.public" = ["*", "**/*"]
+"ckanext.doi.tests" = ["test.ini"]
 
 [tool.commitizen]
 name = "cz_nhm"
