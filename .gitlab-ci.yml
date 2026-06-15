@@ -78,7 +78,7 @@ build:package:
     paths:
       - dist/
 
-# Publish python package to our gitlab PyPI (manual)
+# Publish python package to our gitlab PyPI (automatic)
 publish:pypi:
   stage: publish
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
@@ -92,15 +92,15 @@ publish:pypi:
     - python -m pip install --upgrade pip setuptools wheel twine
   rules:
     - if: $CI_COMMIT_TAG
-      when: manual
+      when: on_success
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
+      when: on_success
     - when: never
   script:
     - test -d dist && ls -l dist
     - twine upload --non-interactive dist/*
 
-# Publish python package preview to our gitlab PyPI (manual)
+# Publish python package preview to our gitlab PyPI (automatic)
 # Publishes the current version from setup.py as-is; deleted from registry after validation.
 publish:pypi:preview:
   stage: publish
@@ -114,7 +114,7 @@ publish:pypi:preview:
     - python3 -m pip install --upgrade pip setuptools wheel build twine
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
+      when: on_success
     - when: never
   script:
     - rm -rf dist/
@@ -149,7 +149,7 @@ publish:pypi:preview:
       EOF
     - twine upload --non-interactive dist/*
 
-# Trigger deploy pipeline in fair3r-docker-alt starting from integration (manual)
+# Trigger deploy pipeline in fair3r-docker-alt starting from integration (automatic)
 # Launches the full pipeline: ansible_lint -> deploy_integration -> deploy_validation.
 trigger:fair3r-docker-alt:integration:
   stage: publish
@@ -157,15 +157,15 @@ trigger:fair3r-docker-alt:integration:
     - job: publish:pypi:preview
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
+      when: on_success
     - when: never
   trigger:
     project: ics/fair3r-docker-alt
     branch: main
     strategy: depend
 
-# Delete preview package from registry after validation (manual)
-# Must be triggered manually AFTER deploy_validation has run, to ensure
+# Delete preview package from registry after validation (automatic)
+# Must be triggered automatically AFTER deploy_validation has run, to ensure
 # the preview package is still available when Ansible installs it.
 cleanup:pypi:preview:
   stage: cleanup
@@ -174,7 +174,7 @@ cleanup:pypi:preview:
     - job: trigger:fair3r-docker-alt:integration
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
+      when: on_success
     - when: never
   script:
     - |
