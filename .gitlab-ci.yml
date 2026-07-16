@@ -1,5 +1,6 @@
 # Pipeline stages
 stages:
+  - pre-validate
   - validate
   - build
   - publish
@@ -35,6 +36,27 @@ default:
     - ics-docker
   before_script:
     - python -m pip install --upgrade pip setuptools wheel
+
+# Version check: block MR if version hasn't been incremented compared to main
+version:check:
+  stage: pre-validate
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-alpine
+  before_script:
+    - apk add git
+    - git fetch origin main
+  script:
+    - |
+      LOCAL_VER=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+      REMOTE_VER=$(git show origin/main:pyproject.toml | grep '^version = ' | cut -d'"' -f2)
+      echo "Local version: $LOCAL_VER, Remote (main) version: $REMOTE_VER"
+      if [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
+        echo "Error: DOI version must be incremented before merging (current: $LOCAL_VER)";
+        exit 1;
+      fi
+      echo "Version check passed: $LOCAL_VER > $REMOTE_VER"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
 
 # Linting (ruff)
 lint:ruff:
@@ -101,7 +123,9 @@ publish:pypi:
     - twine upload --non-interactive dist/*
 
 # Publish python package preview to our gitlab PyPI (automatic)
-# Publishes the current version from setup.py as-is; deleted from registry after validation.
+# Publishes the current version from pyproject.toml as-is; deleted from registry after validation.
+# Uses MR IID to make each preview version unique across concurrent MRs.
+# Modifies pyproject.toml temporarily to inject the MR IID into the version.
 publish:pypi:preview:
   stage: publish
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
@@ -118,35 +142,18 @@ publish:pypi:preview:
     - when: never
   script:
     - rm -rf dist/
+    - |
+      python3 -c "
+      import re, os, pathlib
+      p = pathlib.Path('pyproject.toml')
+      t = p.read_text()
+      mr_iid = os.environ.get('CI_MERGE_REQUEST_IID', '')
+      if mr_iid:
+          t = re.sub(r'(?m)^(version\s*=\s*\")([^\"]+)(\")', r'\1\2+mr' + mr_iid + r'\3', t)
+          p.write_text(t)
+      "
     - python3 -m build
     - twine check dist/*
-    - |
-      python3 - <<'EOF'
-      import json, os, pathlib, re, urllib.request, urllib.error
-
-      version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pathlib.Path("pyproject.toml").read_text()).group(1)
-      api     = os.environ["CI_API_V4_URL"]
-      project = os.environ["CI_PROJECT_ID"]
-      token   = os.environ["CI_JOB_TOKEN"]
-      headers = {"JOB-TOKEN": token}
-
-      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_version={version}&package_type=pypi"
-      req = urllib.request.Request(url, headers=headers)
-      with urllib.request.urlopen(req) as r:
-          pkgs = json.load(r)
-
-      if pkgs:
-          pkg_id = pkgs[0]["id"]
-          print(f"Deleting existing preview package {version} (id={pkg_id}) before re-upload...")
-          del_req = urllib.request.Request(f"{api}/projects/{project}/packages/{pkg_id}", headers=headers, method="DELETE")
-          try:
-              urllib.request.urlopen(del_req)
-          except urllib.error.HTTPError as e:
-              raise SystemExit(f"DELETE failed: {e.code} {e.reason}")
-          print("Deleted.")
-      else:
-          print(f"No existing preview package {version} found, proceeding with upload.")
-      EOF
     - twine upload --non-interactive dist/*
 
 # Trigger deploy pipeline in fair3r-docker-alt starting from integration (automatic)
@@ -159,52 +166,74 @@ trigger:fair3r-docker-alt:integration:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
     - when: never
+  variables:
+    DOI_PLUGIN_REF: $CI_COMMIT_REF_NAME
+    CI_MERGE_REQUEST_IID: $CI_MERGE_REQUEST_IID
   trigger:
     project: ics/fair3r-docker-alt
     branch: main
     strategy: depend
 
 # Delete preview package from registry after validation (automatic)
-# Must be triggered automatically AFTER deploy_validation has run, to ensure
-# the preview package is still available when Ansible installs it.
+# Uses the GitLab Packages API to delete the preview package.
+# Note: twine uploads to the PyPI namespace, but deletion must go through
+# the Packages API endpoint (not the PyPI/simple endpoint).
 cleanup:pypi:preview:
   stage: cleanup
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
   needs:
     - job: trigger:fair3r-docker-alt:integration
+      optional: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: always
     - when: never
   script:
     - |
-      python3 - <<'EOF'
+      python3 - <<'PYEOF'
       import json, os, pathlib, re, urllib.request, urllib.error
 
       version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pathlib.Path("pyproject.toml").read_text()).group(1)
-      api     = os.environ["CI_API_V4_URL"]
+      mr_iid = os.environ.get("CI_MERGE_REQUEST_IID", "")
+      preview_version = f"{version}+mr{mr_iid}" if mr_iid else version
+      api = os.environ["CI_API_V4_URL"]
       project = os.environ["CI_PROJECT_ID"]
-      token   = os.environ["CI_JOB_TOKEN"]
+      token = os.environ["CI_JOB_TOKEN"]
       headers = {"JOB-TOKEN": token}
 
-      print(f"Deleting preview package {version} from registry...")
+      print(f"Deleting preview package {preview_version} from registry...")
 
-      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_version={version}&package_type=pypi"
+      # List packages via the GitLab Packages API
+      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_type=pypi"
       req = urllib.request.Request(url, headers=headers)
       with urllib.request.urlopen(req) as r:
           pkgs = json.load(r)
 
-      if not pkgs:
-          raise SystemExit(f"Package not found in registry: {version}")
+      print(f"Found {len(pkgs)} package(s) in registry")
 
-      pkg_id = pkgs[0]["id"]
+      # Find the exact preview package to delete
+      target = None
+      for pkg in pkgs:
+          if pkg.get("version") == preview_version:
+              target = pkg
+              break
+
+      if not target:
+          raise SystemExit(f"Package {preview_version} not found in registry. Available versions: {[p.get('version') for p in pkgs]}")
+
+      pkg_id = target["id"]
       print(f"Found package ID: {pkg_id}")
 
-      del_req = urllib.request.Request(f"{api}/projects/{project}/packages/{pkg_id}", headers=headers, method="DELETE")
+      # Delete via the GitLab Packages API
+      del_req = urllib.request.Request(
+          f"{api}/projects/{project}/packages/{pkg_id}",
+          headers=headers,
+          method="DELETE"
+      )
       try:
           urllib.request.urlopen(del_req)
       except urllib.error.HTTPError as e:
           raise SystemExit(f"DELETE failed: {e.code} {e.reason}")
 
-      print(f"Package {version} deleted from registry.")
-      EOF
+      print(f"Package {preview_version} deleted from registry.")
+      PYEOF
