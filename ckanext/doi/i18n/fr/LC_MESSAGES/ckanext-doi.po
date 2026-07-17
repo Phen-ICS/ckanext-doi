@@ -1,0 +1,105 @@
+# French translations for ckanext-doi.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the ckanext-doi
+# project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ckanext-fair3r-doi 3.3.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-07-09 08:59+0000\n"
+"PO-Revision-Date: 2026-07-02 12:00+0000\n"
+"Last-Translator: FAIR3R <debannen@igbmc.fr>\\nLanguage: fr\n"
+"Language: fr\n"
+"Language-Team: French <fr@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.15.0\n"
+
+#: ckanext/doi/plugin.py:96
+msgid "DataCite DOI created"
+msgstr "DOI DataCite créé"
+
+#: ckanext/doi/plugin.py:106
+msgid "DataCite DOI metadata updated"
+msgstr "Métadonnées du DOI DataCite mises à jour"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:8
+#: ckanext/doi/theme/templates/doi/snippets/resource_citation.html:10
+msgid "Cite this as"
+msgstr "Citer comme suit"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:13
+msgid "[Data set]"
+msgstr "[jeu de données]"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:28
+msgid "This DOI has not yet been published"
+msgstr "Ce DOI n'a pas encore été publié"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:29
+msgid "Private DOI"
+msgstr "DOI privé"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:32
+msgid "This DOI is not yet resolvable."
+msgstr "Ce DOI n'est pas encore résolvable."
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:37
+msgid ""
+"It is available for use in manuscripts, and will be published when the "
+"Dataset is made public."
+msgstr ""
+"Il peut être utilisé dans des manuscrits et sera publié lorsque le jeu de"
+" données sera rendu public."
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:44
+msgid "Retrieved:"
+msgstr "Consulté le :"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:50
+msgid "Download BibTeX"
+msgstr "Télécharger le BibTeX"
+
+#: ckanext/doi/theme/templates/doi/snippets/package_citation.html:51
+msgid "BibTeX"
+msgstr "BibTeX"
+
+#: ckanext/doi/theme/templates/doi/snippets/resource_citation.html:14
+msgid "from"
+msgstr "de"
+
+#: ckanext/doi/theme/templates/doi/snippets/resource_citation.html:14
+msgid "[Data set resource]"
+msgstr "[ressource de jeu de données]"
+
+#: ckanext/doi/theme/templates/package/read.html:15
+msgid "This dataset has been deleted."
+msgstr "Ce jeu de données a été supprimé."
+
+#: ckanext/doi/theme/templates/package/snippets/package_basic_fields.html:5
+msgid "Title"
+msgstr "Titre"
+
+#: ckanext/doi/theme/templates/package/snippets/package_basic_fields.html:5
+msgid "eg. A descriptive title"
+msgstr "ex. : un titre descriptif"
+
+#: ckanext/doi/theme/templates/package/snippets/package_metadata_fields.html:9
+msgid "Author(s)"
+msgstr "Auteur(s)"
+
+#: ckanext/doi/theme/templates/package/snippets/package_metadata_fields.html:9
+msgid "Joe Bloggs"
+msgstr "Jean Dupont"
+
+#: ckanext/doi/theme/templates/package/snippets/package_metadata_fields.html:12
+msgid "Author Email"
+msgstr "E-mail de l'auteur"
+
+#: ckanext/doi/theme/templates/package/snippets/package_metadata_fields.html:12
+msgid "joe@example.com"
+msgstr "jean@exemple.com"
+
