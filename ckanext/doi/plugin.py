@@ -7,6 +7,7 @@
 from datetime import datetime
 from logging import getLogger
 
+from ckan.lib.plugins import DefaultTranslation
 from ckan.plugins import SingletonPlugin, implements, interfaces, toolkit
 
 from ckanext.doi import cli
@@ -23,7 +24,7 @@ from ckanext.doi.model.crud import DOIQuery
 log = getLogger(__name__)
 
 
-class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
+class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation):
     """
     CKAN DOI Extension.
     """
@@ -32,6 +33,7 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
     implements(interfaces.IPackageController, inherit=True)
     implements(interfaces.ITemplateHelpers, inherit=True)
     implements(interfaces.IClick)
+    implements(interfaces.ITranslation)
 
     ## IClick
     def get_commands(self):
@@ -91,7 +93,7 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
                 client.set_metadata(doi.identifier, xml_dict)
                 client.mint_doi(doi.identifier, package_id)
                 try:
-                    toolkit.h.flash_success('DataCite DOI created')
+                    toolkit.h.flash_success(toolkit._('DataCite DOI created'))
                 except Exception:
                     log.debug('flash_success unavailable outside request context')
             else:
@@ -100,7 +102,9 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm):
                     # Not the same, so we want to update the metadata
                     client.set_metadata(doi.identifier, xml_dict)
                     try:
-                        toolkit.h.flash_success('DataCite DOI metadata updated')
+                        toolkit.h.flash_success(
+                            toolkit._('DataCite DOI metadata updated')
+                        )
                     except Exception:
                         log.debug('flash_success unavailable outside request context')
 

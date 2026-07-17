@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-fair3r-doi"
-version = "3.2.3"
+version = "3.3.1"
 description = "A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service."
 readme = "README.md"
 requires-python = ">=3.6"
@@ -40,6 +40,9 @@ changelog = "https://github.com/NaturalHistoryMuseum/ckanext-doi/blob/main/CHANG
 [project.entry-points."ckan.plugins"]
 doi = "ckanext.doi.plugin:DOIPlugin"
 
+[project.entry-points."babel.extractors"]
+ckan = "ckan.lib.extract:extract_ckan"
+
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -56,6 +59,7 @@ exclude = ["docs"]
 [tool.setuptools.package-data]
 "ckanext.doi.theme" = ["*", "**/*"]
 "ckanext.doi.public" = ["*", "**/*"]
+"ckanext.doi.i18n" = ["*.pot", "**/*.po", "**/*.mo"]
 "ckanext.doi.tests" = ["test.ini"]
 
 [tool.commitizen]
