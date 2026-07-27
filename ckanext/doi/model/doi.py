@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
@@ -29,8 +28,6 @@ class DOI(DomainObject):
     """
     DOI Object.
     """
-
-    pass
 
 
 meta.mapper(

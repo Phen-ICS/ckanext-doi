@@ -38,26 +38,28 @@ class TestDOIPlugin:
         # correctly whether you are on CKAN 2.9 or CKAN 2.10.
 
         # the udpate function has flashes in it which we don't care about
-        with patch('ckan.plugins.toolkit.h.flash_success'):
-            with patch('ckanext.doi.lib.api.DataCiteMDSClient') as mock_client_class:
-                # mock the datacite API to make it look like the DOI generated is new
-                mock_client = MagicMock(
-                    metadata_get=MagicMock(side_effect=DataCiteNotFoundError())
-                )
-                mock_client_class.return_value = mock_client
+        with (
+            patch('ckan.plugins.toolkit.h.flash_success'),
+            patch('ckanext.doi.lib.api.DataCiteMDSClient') as mock_client_class,
+        ):
+            # mock the datacite API to make it look like the DOI generated is new
+            mock_client = MagicMock(
+                metadata_get=MagicMock(side_effect=DataCiteNotFoundError())
+            )
+            mock_client_class.return_value = mock_client
 
-                # create a new dataset
-                dataset = factories.Dataset(title='test', author='Author, Test')
+            # create a new dataset
+            dataset = factories.Dataset(title='test', author='Author, Test')
 
-                # reset our mock
-                mock_client.reset()
+            # reset our mock
+            mock_client.reset()
 
-                # update the dataset's title, this should trigger after_dataset_update
-                call_action('package_patch', id=dataset['id'], title='different')
+            # update the dataset's title, this should trigger after_dataset_update
+            call_action('package_patch', id=dataset['id'], title='different')
 
-                # check that attempts have been made to mint the DOI
-                assert mock_client.metadata_post.called
-                assert mock_client.doi_post.called
+            # check that attempts have been made to mint the DOI
+            assert mock_client.metadata_post.called
+            assert mock_client.doi_post.called
 
     @pytest.mark.ckan_config('ckanext.doi.publisher', 'argh!')
     @pytest.mark.ckan_config('ckanext.doi.site_url', 'http://dois.are.great.org')

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
@@ -94,7 +93,7 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
                 client.mint_doi(doi.identifier, package_id)
                 try:
                     toolkit.h.flash_success(toolkit._('DataCite DOI created'))
-                except Exception:
+                except Exception:  # noqa: BLE001
                     log.debug('flash_success unavailable outside request context')
             else:
                 same = client.check_for_update(doi.identifier, xml_dict)
@@ -105,7 +104,7 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
                         toolkit.h.flash_success(
                             toolkit._('DataCite DOI metadata updated')
                         )
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         log.debug('flash_success unavailable outside request context')
 
         return pkg_dict
@@ -118,7 +117,7 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
         doi = DOIQuery.read_package(pkg_dict['id'])
         if doi:
             pkg_dict['doi'] = doi.identifier
-            pkg_dict['doi_status'] = True if doi.published else False
+            pkg_dict['doi_status'] = bool(doi.published)
             pkg_dict['domain'] = get_site_url().replace('http://', '')
             pkg_dict['doi_date_published'] = (
                 datetime.strftime(doi.published, '%Y-%m-%d') if doi.published else None

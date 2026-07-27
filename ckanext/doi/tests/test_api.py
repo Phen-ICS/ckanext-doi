@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
@@ -10,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from datacite.errors import DataCiteError, DataCiteNotFoundError
 
-from ckanext.doi.lib.api import DataciteClient
+from ckanext.doi.lib.api import DataciteClient, DOIGenerationError
 
 from .helpers import constants
 
@@ -50,18 +49,21 @@ class TestGenerateNewDOI:
         # no dois in the database
         mock_read_doi = MagicMock(return_value=None)
 
-        with patch(
-            'ckanext.doi.lib.api.DataCiteMDSClient', MagicMock(return_value=mock_client)
+        with (
+            patch(
+                'ckanext.doi.lib.api.DataCiteMDSClient',
+                MagicMock(return_value=mock_client),
+            ),
+            patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi),
         ):
-            with patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi):
-                api = DataciteClient()
-                doi = api.generate_doi()
-                assert isinstance(doi, str)
-                # both the client and the database should be called once and only once (yes this
-                # goes against the comment at the start of this class but it felt relevant here to
-                # check that this was the case)
-                assert mock_client.metadata_get.call_count == 1
-                assert mock_read_doi.call_count == 1
+            api = DataciteClient()
+            doi = api.generate_doi()
+            assert isinstance(doi, str)
+            # both the client and the database should be called once and only once (yes this
+            # goes against the comment at the start of this class but it felt relevant here to
+            # check that this was the case)
+            assert mock_client.metadata_get.call_count == 1
+            assert mock_read_doi.call_count == 1
 
     def test_one_existing_db_doi(self):
         # no dois in datacite
@@ -71,13 +73,16 @@ class TestGenerateNewDOI:
         # one doi in the database that hits the first call, but then the next time is fine
         mock_read_doi = MagicMock(side_effect=first_then(MagicMock(), None))
 
-        with patch(
-            'ckanext.doi.lib.api.DataCiteMDSClient', MagicMock(return_value=mock_client)
+        with (
+            patch(
+                'ckanext.doi.lib.api.DataCiteMDSClient',
+                MagicMock(return_value=mock_client),
+            ),
+            patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi),
         ):
-            with patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi):
-                api = DataciteClient()
-                doi = api.generate_doi()
-                assert isinstance(doi, str)
+            api = DataciteClient()
+            doi = api.generate_doi()
+            assert isinstance(doi, str)
 
     def test_one_existing_on_datacite(self):
         # the first call to the datacite client returns a (mock) doi but then the next one succeeds
@@ -89,13 +94,16 @@ class TestGenerateNewDOI:
         # no dois in the db
         mock_read_doi = MagicMock(return_value=None)
 
-        with patch(
-            'ckanext.doi.lib.api.DataCiteMDSClient', MagicMock(return_value=mock_client)
+        with (
+            patch(
+                'ckanext.doi.lib.api.DataCiteMDSClient',
+                MagicMock(return_value=mock_client),
+            ),
+            patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi),
         ):
-            with patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi):
-                api = DataciteClient()
-                doi = api.generate_doi()
-                assert isinstance(doi, str)
+            api = DataciteClient()
+            doi = api.generate_doi()
+            assert isinstance(doi, str)
 
     def test_one_existing_on_datacite_and_one_in_the_db(self):
         # the first call to the datacite client returns a (mock) doi but then the next one succeeds
@@ -107,13 +115,16 @@ class TestGenerateNewDOI:
         # the first call to the db returns a result but then after that we're all good
         mock_read_doi = MagicMock(side_effect=first_then(MagicMock(), None))
 
-        with patch(
-            'ckanext.doi.lib.api.DataCiteMDSClient', MagicMock(return_value=mock_client)
+        with (
+            patch(
+                'ckanext.doi.lib.api.DataCiteMDSClient',
+                MagicMock(return_value=mock_client),
+            ),
+            patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi),
         ):
-            with patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi):
-                api = DataciteClient()
-                doi = api.generate_doi()
-                assert isinstance(doi, str)
+            api = DataciteClient()
+            doi = api.generate_doi()
+            assert isinstance(doi, str)
 
     def test_it_fails_when_it_cannot_generate_a_unique_doi(self):
         # the datacite client returns an existing (mock) doi every time, so unlikely!
@@ -121,14 +132,16 @@ class TestGenerateNewDOI:
         # the db returns an existing (mock) doi every time, so unlikely!
         mock_read_doi = MagicMock()
 
-        with patch('ckanext.doi.lib.api.DataCiteMDSClient', mock_client):
-            with patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi):
-                api = DataciteClient()
-                with pytest.raises(Exception, match='Failed to generate a DOI'):
-                    api.generate_doi()
+        with (
+            patch('ckanext.doi.lib.api.DataCiteMDSClient', mock_client),
+            patch('ckanext.doi.lib.api.DOIQuery.read_doi', mock_read_doi),
+        ):
+            api = DataciteClient()
+            with pytest.raises(DOIGenerationError, match='Failed to generate a DOI'):
+                api.generate_doi()
 
 
-class MockDataciteMDSClient(object):
+class MockDataciteMDSClient:
     """
     Mock client so that we can replicate the functionality of the datacite API without
     actually calling it.
@@ -155,7 +168,7 @@ class MockDataciteMDSClient(object):
 @pytest.mark.ckan_config('ckanext.doi.prefix', 'testing')
 @patch('ckanext.doi.lib.api.DataCiteMDSClient', MockDataciteMDSClient)
 @patch('ckanext.doi.lib.api.DOIQuery')
-class TestMintNewDOI(object):
+class TestMintNewDOI:
     def test_datacite_api_order(self, mock_crud):
         mock_crud.read_doi = MagicMock(return_value=None)
         mock_crud.read_package = MagicMock(return_value=None)
@@ -235,7 +248,7 @@ class TestMintNewDOI(object):
 @pytest.mark.ckan_config('ckanext.doi.account_name', 'goat!')
 @pytest.mark.ckan_config('ckanext.doi.account_password', 'hammocks?')
 @patch('ckanext.doi.lib.api.DataCiteMDSClient')
-class TestDataciteClientCreation(object):
+class TestDataciteClientCreation:
     @pytest.mark.ckan_config('ckanext.doi.test_mode', False)
     def test_basics(self, mock_client):
         DataciteClient()

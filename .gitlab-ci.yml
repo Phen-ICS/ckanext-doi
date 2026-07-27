@@ -62,14 +62,14 @@ version:check:
 lint:ruff:
   stage: validate
   script:
-    - pip install ruff
+    - pip install ruff==0.16.0
     - ruff check ckanext
 
 # Format check (ruff format)
 lint:ruff-format:
   stage: validate
   script:
-    - pip install ruff
+    - pip install ruff==0.16.0
     - ruff format --check ckanext
 
 # Security scan (bandit)

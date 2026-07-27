@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
@@ -8,6 +7,7 @@ import logging
 import secrets
 import string
 from datetime import datetime as dt
+from datetime import timezone
 
 import xmltodict
 from ckan.plugins import toolkit
@@ -18,6 +18,11 @@ try:
 except ImportError:
     from datacite import schema42
 from datacite.errors import DataCiteError, DataCiteNotFoundError
+
+
+class DOIGenerationError(Exception):
+    """Raised when DOI generation fails."""
+
 
 from ckanext.doi.lib.helpers import doi_test_mode
 from ckanext.doi.model.crud import DOIQuery
@@ -108,7 +113,7 @@ class DataciteClient:
                         f'error: {e}'
                     )
             attempts -= 1
-        raise Exception('Failed to generate a DOI')
+        raise DOIGenerationError('Failed to generate a DOI')
 
     def mint_doi(self, doi, package_id):
         """
@@ -130,7 +135,7 @@ class DataciteClient:
         elif DOIQuery.read_doi(doi) is None:
             # in case this was previously attempted but no DOI was added
             DOIQuery.update_package(package_id, identifier=doi)
-        DOIQuery.update_doi(doi, published=dt.now())
+        DOIQuery.update_doi(doi, published=dt.now(timezone.utc))
 
     def set_metadata(self, doi, xml_dict):
         """
@@ -177,8 +182,7 @@ class DataciteClient:
             return False
         posted_xml_dict = dict(xmltodict.parse(posted_xml).get('resource', {}))
         new_xml_dict = dict(xmltodict.parse(schema42.tostring(xml_dict))['resource'])
-        if 'identifier' in posted_xml_dict:
-            del posted_xml_dict['identifier']
+        posted_xml_dict.pop('identifier', None)
         has_dates = 'dates' in posted_xml_dict and 'date' in posted_xml_dict['dates']
         if has_dates:
             posted_xml_dict['dates']['date'] = [
