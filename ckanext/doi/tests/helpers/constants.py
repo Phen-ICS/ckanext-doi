@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
 
 import datetime
+from datetime import timezone
 
 PKG_DICT = {
     'domain': 'data.nhm.ac.uk',
@@ -80,11 +80,15 @@ METADATA_DICT = {
     'geolocations': [],
     'dates': [
         {
-            'date': datetime.datetime(2020, 11, 9, 17, 14, 6, 700561),
+            'date': datetime.datetime(
+                2020, 11, 9, 17, 14, 6, 700561, tzinfo=timezone.utc
+            ),
             'dateType': 'Created',
         },
         {
-            'date': datetime.datetime(2020, 11, 9, 17, 14, 7, 225364),
+            'date': datetime.datetime(
+                2020, 11, 9, 17, 14, 7, 225364, tzinfo=timezone.utc
+            ),
             'dateType': 'Updated',
         },
         {'date': None, 'dateType': 'Issued'},

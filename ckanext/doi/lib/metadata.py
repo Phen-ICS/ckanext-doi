@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
@@ -42,7 +41,7 @@ def build_metadata_dict(pkg_dict):
     def _add_required(key, get_func):
         try:
             required[key] = get_func()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors[key] = e
 
     # CREATORS
@@ -88,7 +87,7 @@ def build_metadata_dict(pkg_dict):
         optional['subjects'] = [
             {'subject': tag} for tag in sorted({t for t in tags if t != ''})
         ]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['subjects'] = e
 
     # DATES
@@ -101,7 +100,7 @@ def build_metadata_dict(pkg_dict):
                 'date': date_or_none(pkg_dict.get('metadata_created')),
             }
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         date_errors['created'] = e
     try:
         optional['dates'].append(
@@ -110,7 +109,7 @@ def build_metadata_dict(pkg_dict):
                 'date': date_or_none(pkg_dict.get('metadata_modified')),
             }
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         date_errors['updated'] = e
     if 'doi_date_published' in pkg_dict:
         try:
@@ -120,7 +119,7 @@ def build_metadata_dict(pkg_dict):
                     'date': date_or_none(pkg_dict.get('doi_date_published')),
                 }
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             date_errors['doi_date_published'] = e
 
     # LANGUAGE
@@ -129,7 +128,7 @@ def build_metadata_dict(pkg_dict):
         # remove any localisation of the language, e.g. en from en_GB.
         # default to english in case nothing is set, because it's ckan's default
         optional['language'] = (ckan_lang() or 'en')[:2]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['language'] = e
 
     # ALTERNATE IDENTIFIERS
@@ -139,7 +138,7 @@ def build_metadata_dict(pkg_dict):
         optional['alternateIdentifiers'] = [
             {'alternateIdentifierType': 'URL', 'alternateIdentifier': permalink}
         ]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['alternateIdentifiers'] = e
 
     # RELATED IDENTIFIERS
@@ -154,7 +153,7 @@ def build_metadata_dict(pkg_dict):
                     'relatedIdentifier': str(source_url).strip(),
                 }
             ]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['relatedIdentifiers'] = e
 
     # SIZES
@@ -165,7 +164,7 @@ def build_metadata_dict(pkg_dict):
         ]
         total_size = [f'{int(sum(resource_sizes) / 1024)} kb']
         optional['sizes'] = total_size
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['sizes'] = e
 
     # FORMATS
@@ -179,7 +178,7 @@ def build_metadata_dict(pkg_dict):
             )
         )
         optional['formats'] = formats
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['formats'] = e
 
     # VERSION
@@ -197,7 +196,7 @@ def build_metadata_dict(pkg_dict):
                 optional['rightsList'] = [
                     {'rightsURI': license.url, 'rightsIdentifier': license.id}
                 ]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['rightsList'] = e
 
     # DESCRIPTIONS
@@ -255,7 +254,7 @@ def build_metadata_dict(pkg_dict):
             descriptions.append(
                 {'descriptionType': 'Other', 'description': description_text}
             )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors['descriptions'] = e
         log.warning(f'Error processing extras for descriptions: {e}')
 
@@ -388,7 +387,7 @@ def build_xml_dict(metadata_dict):
         v = metadata_dict.get(k)
         try:
             has_value = v is not None and len(v) > 0
-        except Exception:
+        except Exception:  # noqa: BLE001
             has_value = False
         if not has_value:
             continue

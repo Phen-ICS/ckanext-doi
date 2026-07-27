@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
+
+from typing import ClassVar
 
 from ckan.model import Session
 
@@ -12,7 +13,7 @@ from ckanext.doi.model.doi import DOI, doi_table
 class DOIQuery:
     # convenience properties
     m = DOI
-    cols = [c.name for c in doi_table.c]
+    cols: ClassVar[list[str]] = [c.name for c in doi_table.c]
 
     @classmethod
     def create(cls, identifier, package_id, published=None):

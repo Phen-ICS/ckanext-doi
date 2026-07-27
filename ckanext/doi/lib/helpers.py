@@ -1,14 +1,13 @@
 # !/usr/bin/env python
-# encoding: utf-8
 #
 # This file is part of ckanext-doi
 # Created by the Natural History Museum in London, UK
 
 from datetime import datetime
 
-import dateutil.parser as parser
 from ckan.plugins import toolkit
 from ckantools.config import get_debug, get_setting
+from dateutil import parser
 
 
 def package_get_year(pkg_dict):
