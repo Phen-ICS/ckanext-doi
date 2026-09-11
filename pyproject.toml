@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-fair3r-doi"
-version = "3.3.2"
+version = "3.3.3"
 description = "A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service."
 readme = "README.md"
 requires-python = ">=3.6"
@@ -45,7 +45,10 @@ ckan = "ckan.lib.extract:extract_ckan"
 
 
 [build-system]
-requires = ["setuptools", "wheel"]
+# Pinned below 77: setuptools>=77 emits Metadata-Version 2.4 (PEP 639),
+# which this GitLab instance's PyPI package registry rejects with a
+# 400 Bad Request on upload.
+requires = ["setuptools<77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
