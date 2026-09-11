@@ -122,6 +122,31 @@ publish:pypi:
     - test -d dist && ls -l dist
     - twine upload --non-interactive dist/*
 
+# Publish python package to the public PyPI (pypi.org, manual).
+# Requires a PYPI_API_TOKEN CI/CD variable (masked) holding a pypi.org API
+# token for this package. Manual (not automatic): unlike the GitLab
+# registry, a version can't be re-uploaded once published to pypi.org, so
+# this needs a deliberate click rather than running on every push. Gated on
+# the default branch rather than a git tag, since this team doesn't use
+# tags; `when: manual` is what actually prevents an accidental publish.
+publish:pypi:public:
+  stage: publish
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
+  needs:
+    - build:package
+  variables:
+    TWINE_USERNAME: "__token__"
+    TWINE_PASSWORD: "$PYPI_API_TOKEN"
+  before_script:
+    - python -m pip install --upgrade pip setuptools wheel twine
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+    - when: never
+  script:
+    - test -d dist && ls -l dist
+    - twine upload --non-interactive dist/*
+
 # Publish python package preview to our gitlab PyPI (automatic)
 # Publishes the current version from pyproject.toml as-is; deleted from registry after validation.
 # Uses MR IID to make each preview version unique across concurrent MRs.
