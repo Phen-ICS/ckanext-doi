@@ -58,12 +58,19 @@ Path variables used below:
 - `$INSTALL_FOLDER` (i.e. where CKAN is installed), e.g. `/usr/lib/ckan/default`
 - `$CONFIG_FILE`, e.g. `/etc/ckan/default/development.ini`
 
+## Installing via pip
+
+```shell
+source /usr/lib/ckan/default/bin/activate
+pip install ckanext-fair3r-doi
+```
+
 ## Installing from source
 
 1. Clone the repository into the `src` folder:
    ```shell
    cd $INSTALL_FOLDER/src
-   git clone git@serv-gitlab.igbmc.u-strasbg.fr:ics/ckanext-doi.git
+   git clone <url-of-this-repository>
    ```
 
 2. Activate the virtual env:
