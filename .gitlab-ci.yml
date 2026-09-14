@@ -4,7 +4,6 @@ stages:
   - validate
   - build
   - publish
-  - cleanup
 
 # Global variables
 variables:
@@ -100,28 +99,6 @@ build:package:
     paths:
       - dist/
 
-# Publish python package to our gitlab PyPI (automatic)
-publish:pypi:
-  stage: publish
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
-  needs:
-    - build:package
-  variables:
-    TWINE_USERNAME: "gitlab-ci-token"
-    TWINE_PASSWORD: "$CI_JOB_TOKEN"
-    TWINE_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
-  before_script:
-    - python -m pip install --upgrade pip setuptools wheel twine
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: on_success
-    - when: never
-  script:
-    - test -d dist && ls -l dist
-    - twine upload --non-interactive dist/*
-
 # Publish python package to the public PyPI (pypi.org, manual).
 # Requires a PYPI_API_TOKEN CI/CD variable (masked) holding a pypi.org API
 # token for this package. Manual (not automatic): unlike the GitLab
@@ -147,46 +124,15 @@ publish:pypi:public:
     - test -d dist && ls -l dist
     - twine upload --non-interactive dist/*
 
-# Publish python package preview to our gitlab PyPI (automatic)
-# Publishes the current version from pyproject.toml as-is; deleted from registry after validation.
-# Uses MR IID to make each preview version unique across concurrent MRs.
-# Modifies pyproject.toml temporarily to inject the MR IID into the version.
-publish:pypi:preview:
-  stage: publish
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
-  variables:
-    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-    TWINE_USERNAME: "gitlab-ci-token"
-    TWINE_PASSWORD: "$CI_JOB_TOKEN"
-    TWINE_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
-  before_script:
-    - python3 -m pip install --upgrade pip setuptools wheel build twine
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: on_success
-    - when: never
-  script:
-    - rm -rf dist/
-    - |
-      python3 -c "
-      import re, os, pathlib
-      p = pathlib.Path('pyproject.toml')
-      t = p.read_text()
-      mr_iid = os.environ.get('CI_MERGE_REQUEST_IID', '')
-      if mr_iid:
-          t = re.sub(r'(?m)^(version\s*=\s*\")([^\"]+)(\")', r'\1\2+mr' + mr_iid + r'\3', t)
-          p.write_text(t)
-      "
-    - python3 -m build
-    - twine check dist/*
-    - twine upload --non-interactive dist/*
-
 # Trigger deploy pipeline in fair3r-docker-alt starting from integration (automatic)
 # Launches the full pipeline: ansible_lint -> deploy_integration -> deploy_validation.
+# fair3r-docker-alt fetches this MR's build:package wheel directly via
+# needs:project (see its .gitlab-ci.yml fetch:preview:doi job) — no
+# publish/registry step needed on this side.
 trigger:fair3r-docker-alt:integration:
   stage: publish
   needs:
-    - job: publish:pypi:preview
+    - job: build:package
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -198,67 +144,3 @@ trigger:fair3r-docker-alt:integration:
     project: ics/fair3r-docker-alt
     branch: main
     strategy: depend
-
-# Delete preview package from registry after validation (automatic)
-# Uses the GitLab Packages API to delete the preview package.
-# Note: twine uploads to the PyPI namespace, but deletion must go through
-# the Packages API endpoint (not the PyPI/simple endpoint).
-cleanup:pypi:preview:
-  stage: cleanup
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
-  needs:
-    - job: trigger:fair3r-docker-alt:integration
-      optional: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: always
-    - when: never
-  script:
-    - |
-      python3 - <<'PYEOF'
-      import json, os, pathlib, re, urllib.request, urllib.error
-
-      version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pathlib.Path("pyproject.toml").read_text()).group(1)
-      mr_iid = os.environ.get("CI_MERGE_REQUEST_IID", "")
-      preview_version = f"{version}+mr{mr_iid}" if mr_iid else version
-      api = os.environ["CI_API_V4_URL"]
-      project = os.environ["CI_PROJECT_ID"]
-      token = os.environ["CI_JOB_TOKEN"]
-      headers = {"JOB-TOKEN": token}
-
-      print(f"Deleting preview package {preview_version} from registry...")
-
-      # List packages via the GitLab Packages API
-      url = f"{api}/projects/{project}/packages?package_name=ckanext-fair3r-doi&package_type=pypi"
-      req = urllib.request.Request(url, headers=headers)
-      with urllib.request.urlopen(req) as r:
-          pkgs = json.load(r)
-
-      print(f"Found {len(pkgs)} package(s) in registry")
-
-      # Find the exact preview package to delete
-      target = None
-      for pkg in pkgs:
-          if pkg.get("version") == preview_version:
-              target = pkg
-              break
-
-      if not target:
-          raise SystemExit(f"Package {preview_version} not found in registry. Available versions: {[p.get('version') for p in pkgs]}")
-
-      pkg_id = target["id"]
-      print(f"Found package ID: {pkg_id}")
-
-      # Delete via the GitLab Packages API
-      del_req = urllib.request.Request(
-          f"{api}/projects/{project}/packages/{pkg_id}",
-          headers=headers,
-          method="DELETE"
-      )
-      try:
-          urllib.request.urlopen(del_req)
-      except urllib.error.HTTPError as e:
-          raise SystemExit(f"DELETE failed: {e.code} {e.reason}")
-
-      print(f"Package {preview_version} deleted from registry.")
-      PYEOF
