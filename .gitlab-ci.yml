@@ -93,11 +93,18 @@ build:package:
     - pip install build twine
     - python -m build
     - twine check dist/*
+    # fair3r-docker-alt fetches this job's artifact by ID (see
+    # trigger:fair3r-docker-alt:integration below) rather than by ref+job
+    # name, since the "latest successful pipeline" lookup can't resolve
+    # while this same pipeline is still running (blocked on that trigger).
+    - echo "BUILD_JOB_ID=$CI_JOB_ID" > build.env
   artifacts:
     when: always
     expire_in: 7 days
     paths:
       - dist/
+    reports:
+      dotenv: build.env
 
 # Publish python package to the public PyPI (pypi.org, manual).
 # Requires a PYPI_API_TOKEN CI/CD variable (masked) holding a pypi.org API
@@ -139,6 +146,7 @@ trigger:fair3r-docker-alt:integration:
     - when: never
   variables:
     DOI_PLUGIN_REF: $CI_COMMIT_REF_NAME
+    DOI_BUILD_JOB_ID: $BUILD_JOB_ID
     CI_MERGE_REQUEST_IID: $CI_MERGE_REQUEST_IID
   trigger:
     project: ics/fair3r-docker-alt
