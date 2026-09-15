@@ -15,6 +15,8 @@
 
 _A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service._
 
+> This is a fork of [NaturalHistoryMuseum/ckanext-doi](https://github.com/NaturalHistoryMuseum/ckanext-doi), adapted for the [Fair3R](https://fair3r.fr) CKAN portal (CNRS/IGBMC).
+
 <!--header-end-->
 
 # Overview
