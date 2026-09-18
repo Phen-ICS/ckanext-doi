@@ -106,13 +106,14 @@ build:package:
     reports:
       dotenv: build.env
 
-# Publish python package to the public PyPI (pypi.org, manual).
+# Publish python package to the public PyPI (pypi.org, automatic).
 # Requires a PYPI_API_TOKEN CI/CD variable (masked) holding a pypi.org API
-# token for this package. Manual (not automatic): unlike the GitLab
-# registry, a version can't be re-uploaded once published to pypi.org, so
-# this needs a deliberate click rather than running on every push. Gated on
-# the default branch rather than a git tag, since this team doesn't use
-# tags; `when: manual` is what actually prevents an accidental publish.
+# token for this package. Automatic on every push to main: validation and
+# production install extensions straight from public PyPI (no version
+# pinned, no private registry), so a merged fix must land there promptly
+# or those environments silently keep running the previous version.
+# version:check already guarantees every merge bumps the version, so
+# there's no risk of trying to re-upload an existing PyPI version.
 publish:pypi:public:
   stage: publish
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10-slim
@@ -125,7 +126,7 @@ publish:pypi:public:
     - python -m pip install --upgrade pip setuptools wheel twine
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
+      when: on_success
     - when: never
   script:
     - test -d dist && ls -l dist
