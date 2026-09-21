@@ -1,9 +1,10 @@
 <!--header-start-->
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://data.nhm.ac.uk/images/nhm_logo.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://data.nhm.ac.uk/images/nhm_logo_black.svg">
-  <img alt="The Natural History Museum logo." src="https://data.nhm.ac.uk/images/nhm_logo_black.svg" align="left" width="150px" height="100px" hspace="40">
-</picture>
+<table>
+<tr>
+<td width="150">
+  <img alt="Natural History Museum logo" src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Natural_History_Museum_London_logo_(large).svg" width="150">
+</td>
+<td>
 
 # ckanext-doi
 
@@ -12,6 +13,10 @@
 [![CKAN](https://img.shields.io/badge/ckan-2.9.9%20%7C%202.10.1-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
 [![Python](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue.svg?style=flat-square)](https://www.python.org/)
 [![Docs](https://img.shields.io/readthedocs/ckanext-doi?style=flat-square)](https://ckanext-doi.readthedocs.io)
+
+</td>
+</tr>
+</table>
 
 _A CKAN extension for assigning a digital object identifier (DOI) to datasets, using the DataCite DOI service._
 
