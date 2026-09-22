@@ -6,7 +6,7 @@
 from ckan.model import Package, meta
 from ckan.model.domain_object import DomainObject
 from sqlalchemy import Column, ForeignKey, Table, types
-from sqlalchemy.orm import backref, relation
+from sqlalchemy.orm import backref, relationship
 
 doi_table = Table(
     'doi',
@@ -30,11 +30,11 @@ class DOI(DomainObject):
     """
 
 
-meta.mapper(
+meta.registry.map_imperatively(
     DOI,
     doi_table,
     properties={
-        'dataset': relation(
+        'dataset': relationship(
             Package,
             backref=backref('doi', cascade='all, delete-orphan'),
             primaryjoin=doi_table.c.package_id.__eq__(Package.id),
