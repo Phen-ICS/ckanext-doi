@@ -29,7 +29,7 @@ class DOIQuery:
             identifier=identifier, package_id=package_id, published=published
         )
         Session.add(new_record)
-        Session.commit()
+        Session.flush()
         return new_record
 
     @classmethod
@@ -72,7 +72,7 @@ class DOIQuery:
         """
         update_dict = {k: v for k, v in kwargs.items() if k in cls.cols}
         Session.query(DOI).filter(DOI.identifier == identifier).update(update_dict)
-        Session.commit()
+        Session.flush()
         return cls.read_doi(identifier)
 
     @classmethod
@@ -87,7 +87,7 @@ class DOIQuery:
         """
         update_dict = {k: v for k, v in kwargs.items() if k in cls.cols}
         Session.query(DOI).filter(DOI.package_id == package_id).update(update_dict)
-        Session.commit()
+        Session.flush()
         return cls.read_package(package_id)
 
     @classmethod
@@ -101,7 +101,7 @@ class DOIQuery:
         to_delete = cls.read_doi(identifier)
         if to_delete is not None:
             Session.delete(to_delete)
-            Session.commit()
+            Session.flush()
             return True
         else:
             return False
@@ -117,7 +117,7 @@ class DOIQuery:
         to_delete = cls.read_package(package_id)
         if to_delete is not None:
             Session.delete(to_delete)
-            Session.commit()
+            Session.flush()
             return True
         else:
             return False
