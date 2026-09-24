@@ -54,6 +54,11 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
         NB: This is called after creation of a dataset, before resources have been
         added, so state = draft.
         """
+        if pkg_dict.get('type', 'dataset') != 'dataset':
+            # Other package types (e.g. ckanext-harvest's 'harvest' sources)
+            # aren't publications and don't carry DOI-relevant metadata
+            # (author, etc.) - nothing to do here.
+            return
         DOIQuery.read_package(pkg_dict['id'], create_if_none=True)
 
     ## IPackageController
@@ -64,6 +69,10 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
         Check status of the dataset to determine if we should publish DOI to datacite
         network.
         """
+        if pkg_dict.get('type', 'dataset') != 'dataset':
+            # See after_dataset_create: not a publication, skip.
+            return pkg_dict
+
         # Is this active and public? If so we need to make sure we have an active DOI
         if pkg_dict.get('state', 'active') == 'active' and not pkg_dict.get(
             'private', False
