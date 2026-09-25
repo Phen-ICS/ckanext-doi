@@ -1,13 +1,10 @@
 import click
-import sqlalchemy
-from ckan import model
 from ckan.model import Session
 from ckan.plugins import toolkit
 from datacite.errors import DataCiteError
 
 from ckanext.doi.lib.api import DataciteClient
 from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict
-from ckanext.doi.model import doi as doi_model
 from ckanext.doi.model.crud import DOIQuery
 from ckanext.doi.model.doi import DOI
 
@@ -19,28 +16,6 @@ def get_commands():
 @click.group()
 def doi():
     pass
-
-
-@doi.command(name='initdb')
-def init_db():
-    engine = Session.get_bind() or model.meta.engine
-    if engine is None:
-        click.secho('Could not determine database engine', fg='red')
-        raise click.Abort()
-
-    inspector = sqlalchemy.inspect(engine)
-
-    if not inspector.has_table(model.package_table.name):
-        click.secho(
-            'Package table must exist before initialising the DOI table', fg='red'
-        )
-        raise click.Abort()
-
-    if inspector.has_table(doi_model.doi_table.name):
-        click.secho('DOI table already exists', fg='green')
-    else:
-        doi_model.doi_table.create(bind=engine)
-        click.secho('DOI table created', fg='green')
 
 
 @doi.command(name='delete-dois')
