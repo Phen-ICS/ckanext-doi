@@ -104,7 +104,7 @@ Installing from a `pyproject.toml` in editable mode (i.e. `pip install -e`) requ
 
 2. Initialise the database:
    ```shell
-   ckan -c $CONFIG_FILE doi initdb
+   ckan -c $CONFIG_FILE db upgrade -p doi
    ```
 
 3. This extension will only work if you have signed up for an account with [DataCite](https://datacite.org). You will need a development/test account to use this plugin in test mode, and a live account to mint active DOIs.
