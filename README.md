@@ -224,24 +224,9 @@ Converts the metadata_dict into an xml_dict that can be passed to the `datacite`
 # Testing
 
 <!--testing-start-->
-There is a Docker compose configuration available in this repository to make it easier to run tests. The ckan image uses the Dockerfile in the `docker/` folder.
-
-To run the tests can be run against ckan 2.9.x and 2.10.x on Python3:
-
-1. Build the required images:
-   ```shell
-   docker compose build
-   ```
-
-2. Then run the tests.
-   The root of the repository is mounted into the ckan container as a volume by the Docker compose configuration, so you should only need to rebuild the ckan image if you change the extension's dependencies.
-   ```shell
-   # run tests against ckan 2.9.x
-   docker compose run latest
-
-   # run tests against ckan 2.10.x
-   docker compose run next
-   ```
+```shell
+docker exec -u ckan -it ckan-app pytest --ckan-ini=/plugins/ckanext-doi/test.ini /plugins/ckanext-doi/ckanext/doi/tests
+```
 
 Note that the tests mock the DataCite API and therefore don't require an internet connection nor your DataCite credentials to run.
 
