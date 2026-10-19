@@ -18,6 +18,7 @@ from ckanext.doi.lib.helpers import (
     package_get_year,
 )
 from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict
+from ckanext.doi.logic import action
 from ckanext.doi.model.crud import DOIQuery
 
 log = getLogger(__name__)
@@ -28,11 +29,20 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
     CKAN DOI Extension.
     """
 
+    implements(interfaces.IActions)
     implements(interfaces.IConfigurer)
     implements(interfaces.IPackageController, inherit=True)
     implements(interfaces.ITemplateHelpers, inherit=True)
     implements(interfaces.IClick)
     implements(interfaces.ITranslation)
+
+    ## IActions
+    def get_actions(self):
+        return {
+            'bulk_update_public': action.bulk_update_public,
+            'bulk_update_private': action.bulk_update_private,
+            'bulk_update_delete': action.bulk_update_delete,
+        }
 
     ## IClick
     def get_commands(self):
