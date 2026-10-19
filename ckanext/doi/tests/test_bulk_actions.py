@@ -51,3 +51,19 @@ def test_bulk_update_carries_on_past_a_failing_dataset(monkeypatch):
         failing_id: False,
         datasets[2]['id']: True,
     }
+
+
+@pytest.mark.parametrize(
+    ('test_mode', 'expected'),
+    [
+        ('True', 'https://handle.test.datacite.org/10.83249/abc'),
+        ('False', 'https://doi.org/10.83249/abc'),
+    ],
+)
+def test_doi_resolver_url(test_mode, expected):
+    from ckan.tests.helpers import changed_config
+
+    from ckanext.doi.lib.helpers import doi_resolver_url
+
+    with changed_config('ckanext.doi.test_mode', test_mode):
+        assert doi_resolver_url('10.83249/abc') == expected

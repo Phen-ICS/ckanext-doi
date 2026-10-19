@@ -17,6 +17,19 @@ from ckanext.doi.lib.helpers import date_or_none, get_site_url, package_get_year
 log = logging.getLogger(__name__)
 
 
+def format_size(num_bytes):
+    """A byte count as DataCite's free-text size, e.g. "32 B", "1.4 MB".
+    Rounded to one decimal, never down to "0" - the previous whole-kb
+    truncation reported any dataset under 1 kB as "0 kb"."""
+    if num_bytes < 1024:
+        return f'{num_bytes} B'
+    value = float(num_bytes)
+    for unit in ('KB', 'MB', 'GB', 'TB'):
+        value /= 1024
+        if value < 1024 or unit == 'TB':
+            return f'{value:.1f}'.rstrip('0').rstrip('.') + f' {unit}'
+
+
 def build_metadata_dict(pkg_dict):
     """
     Build/extract a basic dict of metadata that can then be passed to build_xml_dict.
@@ -157,13 +170,14 @@ def build_metadata_dict(pkg_dict):
         errors['relatedIdentifiers'] = e
 
     # SIZES
-    # sum up given sizes from resources in the package and convert from bytes to kilobytes
+    # sum up given sizes from resources in the package, in a readable unit -
+    # left out when no resource has a known size, rather than "0 kb"
     try:
-        resource_sizes = [
-            r.get('size') or 0 for r in pkg_dict.get('resources', []) or []
-        ]
-        total_size = [f'{int(sum(resource_sizes) / 1024)} kb']
-        optional['sizes'] = total_size
+        total_size = sum(
+            int(r.get('size') or 0) for r in pkg_dict.get('resources', []) or []
+        )
+        if total_size > 0:
+            optional['sizes'] = [format_size(total_size)]
     except Exception as e:  # noqa: BLE001
         errors['sizes'] = e
 

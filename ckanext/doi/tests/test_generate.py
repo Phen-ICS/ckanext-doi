@@ -10,7 +10,7 @@ try:
 except ImportError:
     from datacite import schema42
 
-from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict
+from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict, format_size
 
 from .helpers import constants
 
@@ -27,6 +27,37 @@ def test_extracts_metadata():
     assert metadata_dict['publisher'] == 'Example Publisher'
     assert isinstance(metadata_dict['publicationYear'], int)
     assert constants.PKG_DICT['type'] == metadata_dict['resourceType']
+
+
+@pytest.mark.parametrize(
+    'num_bytes, expected',
+    [
+        (32, '32 B'),
+        (1024, '1 KB'),
+        (1500, '1.5 KB'),
+        (1468006, '1.4 MB'),
+        (5 * 1024**3, '5 GB'),
+    ],
+)
+def test_format_size(num_bytes, expected):
+    assert format_size(num_bytes) == expected
+
+
+@pytest.mark.ckan_config('ckanext.doi.publisher', 'Example Publisher')
+@pytest.mark.parametrize(
+    'sizes, expected',
+    [
+        ([32, None], ['32 B']),
+        ([1024, 2048], ['3 KB']),
+        ([None, None], []),
+    ],
+)
+def test_sizes_sum_resource_sizes(sizes, expected):
+    pkg_dict = {
+        **constants.PKG_DICT,
+        'resources': [{'size': size} for size in sizes],
+    }
+    assert build_metadata_dict(pkg_dict)['sizes'] == expected
 
 
 @pytest.mark.ckan_config('ckanext.doi.publisher', 'Example Publisher')
