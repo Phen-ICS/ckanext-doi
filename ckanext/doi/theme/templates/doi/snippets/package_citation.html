@@ -12,7 +12,7 @@ Renders a citation for a package
             {% block default_citation_string %}
             {{ pkg_dict['author'] }} ({{ h.package_get_year(pkg_dict) }}). <i>{{ pkg_dict['title'] }}</i> {% trans %}[Data set]{% endtrans %}. {{ pkg_dict['doi_publisher'] }}.
             {% block citation_link %}
-            {% set doi_link = 'https://doi.org/' + pkg_dict['doi'] %}
+            {% set doi_link = h.doi_resolver_url(pkg_dict['doi']) %}
             <a href="{{ doi_link }}" target="_blank">
                 {{ doi_link }}
             </a>

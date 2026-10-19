@@ -65,3 +65,18 @@ def doi_test_mode():
     :returns: bool
     """
     return toolkit.asbool(get_setting('ckanext.doi.test_mode', default=get_debug()))
+
+
+def doi_resolver_url(doi):
+    """Link for a DOI: https://doi.org/<doi> in production, DataCite's
+    test resolver in test mode - test DOIs (e.g. prefix 10.83249) only
+    exist on DataCite's test system, doi.org 404s on them, while
+    handle.test.datacite.org resolves them to their landing page just
+    like doi.org does in production.
+
+    :param doi: the DOI string
+    :returns: the URL
+    """
+    if doi_test_mode():
+        return f'https://handle.test.datacite.org/{doi}'
+    return f'https://doi.org/{doi}'
