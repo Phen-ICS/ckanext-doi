@@ -126,3 +126,13 @@ def test_generate_xml_includes_publisher_and_affiliation_identifiers():
     assert 'schemeURI="https://ror.org/"' in xml_doc
     assert 'affiliationIdentifier="https://ror.org/03cjqqq10"' in xml_doc
     assert 'affiliationIdentifierScheme="ROR"' in xml_doc
+
+
+def test_dates_are_iso_and_unknown_dates_are_left_out():
+    # constants.METADATA_DICT has an 'Issued' date of None (not yet published)
+    xml_dict = build_xml_dict(constants.METADATA_DICT)
+    dates = {d['dateType']: d['date'] for d in xml_dict['dates']}
+    assert dates == {
+        'Created': '2020-11-09T17:14:06.700561+00:00',
+        'Updated': '2020-11-09T17:14:07.225364+00:00',
+    }

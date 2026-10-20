@@ -412,12 +412,20 @@ def build_xml_dict(metadata_dict):
                     xml_utils.create_contributor(**contributor)
                 )
         elif k == 'dates':
-            item = []
-            for date_entry in v:
-                date_entry_copy = {k: v for k, v in date_entry.items()}
-                date_entry_copy['date'] = str(date_entry_copy['date'])
-                item.append(date_entry_copy)
-            xml_dict[k] = item
+            # DataCite wants ISO 8601; a date that is still unknown (e.g. 'Issued'
+            # before the first publication) is left out rather than sent as 'None'
+            item = [
+                {
+                    **date_entry,
+                    'date': date_entry['date'].isoformat()
+                    if hasattr(date_entry['date'], 'isoformat')
+                    else str(date_entry['date']),
+                }
+                for date_entry in v
+                if date_entry['date'] is not None
+            ]
+            if item:
+                xml_dict[k] = item
         else:
             xml_dict[k] = v
 
