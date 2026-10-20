@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ckan.plugins import toolkit
 from ckan.tests import factories
 from ckan.tests.helpers import call_action
 from datacite.errors import DataCiteNotFoundError
@@ -85,3 +86,17 @@ class TestDOIPlugin:
         assert package['domain'] == 'dois.are.great.org'
         assert package['doi_date_published'] is None
         assert package['doi_publisher'] == 'argh!'
+
+    @pytest.mark.ckan_config('ckanext.doi.publisher', 'argh!')
+    def test_public_dataset_without_author_is_a_validation_error(self):
+        with patch('ckanext.doi.lib.api.DataCiteMDSClient') as mock_client_class:
+            mock_client_class.return_value = MagicMock(
+                metadata_get=MagicMock(side_effect=DataCiteNotFoundError())
+            )
+            dataset = factories.Dataset(title='test')
+
+            with pytest.raises(toolkit.ValidationError) as exc_info:
+                call_action('package_patch', id=dataset['id'], title='different')
+
+        assert 'author' in exc_info.value.error_dict
+        assert not mock_client_class.return_value.metadata_post.called

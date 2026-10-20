@@ -11,6 +11,7 @@ from ckan.plugins import SingletonPlugin, implements, interfaces, toolkit
 
 from ckanext.doi import cli
 from ckanext.doi.lib.api import DataciteClient
+from ckanext.doi.lib.errors import DOIMetadataException
 from ckanext.doi.lib.helpers import (
     doi_resolver_url,
     doi_test_mode,
@@ -102,8 +103,14 @@ class DOIPlugin(SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation)
             # after package creation)
             doi = DOIQuery.read_package(package_id, create_if_none=True)
 
-            metadata_dict = build_metadata_dict(pkg_show_dict)
-            xml_dict = build_xml_dict(metadata_dict)
+            # incomplete metadata (e.g. no author) is a user error, not a server error
+            try:
+                metadata_dict = build_metadata_dict(pkg_show_dict)
+                xml_dict = build_xml_dict(metadata_dict)
+            except ValueError as e:
+                raise toolkit.ValidationError({'author': [str(e)]})
+            except DOIMetadataException as e:
+                raise toolkit.ValidationError({'DOI': [str(e)]})
 
             client = DataciteClient()
 

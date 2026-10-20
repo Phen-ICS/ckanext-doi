@@ -24,7 +24,7 @@ class DOIGenerationError(Exception):
     """Raised when DOI generation fails."""
 
 
-from ckanext.doi.lib.helpers import doi_test_mode
+from ckanext.doi.lib.helpers import doi_test_mode, get_site_url
 from ckanext.doi.model.crud import DOIQuery
 
 log = logging.getLogger(__name__)
@@ -124,10 +124,7 @@ class DataciteClient:
         """
 
         # create the URL the DOI will point to, i.e. the package page
-        site = toolkit.config.get('ckan.site_url')
-        if site[-1] != '/':
-            site += '/'
-        permalink = f'{site}dataset/{package_id}'
+        permalink = f'{get_site_url()}/dataset/{package_id}'
         # mint the DOI
         self.client.doi_post(doi, permalink)
         if DOIQuery.read_doi(doi) is None and DOIQuery.read_package(package_id) is None:

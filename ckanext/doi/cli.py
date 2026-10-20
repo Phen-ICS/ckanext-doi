@@ -1,7 +1,6 @@
 import click
 from ckan.model import Session
 from ckan.plugins import toolkit
-from datacite.errors import DataCiteError
 
 from ckanext.doi.lib.api import DataciteClient
 from ckanext.doi.lib.metadata import build_metadata_dict, build_xml_dict
@@ -53,35 +52,40 @@ def update_doi(package_ids):
         click.secho('No DOIs found to update', fg='green')
         return
 
+    client = DataciteClient()
+
     for record in dois_to_update:
-        pkg_dict = toolkit.get_action('package_show')({}, {'id': record.package_id})
-        title = pkg_dict.get('title', record.package_id)
-
-        if record.published is None:
-            click.secho(
-                f'"{title}" does not have a published DOI; ignoring', fg='yellow'
+        title = record.package_id
+        try:
+            # ignore_auth: a CLI run has no user, and private/deleted datasets would
+            # otherwise raise NotAuthorized before the checks below can skip them
+            pkg_dict = toolkit.get_action('package_show')(
+                {'ignore_auth': True}, {'id': record.package_id}
             )
-            continue
-        if pkg_dict.get('state', 'active') != 'active' or pkg_dict.get(
-            'private', False
-        ):
-            click.secho(f'"{title}" is inactive or private; ignoring', fg='yellow')
-            continue
+            title = pkg_dict.get('title', record.package_id)
 
-        metadata_dict = build_metadata_dict(pkg_dict)
-        xml_dict = build_xml_dict(metadata_dict)
+            if record.published is None:
+                click.secho(
+                    f'"{title}" does not have a published DOI; ignoring', fg='yellow'
+                )
+                continue
+            if pkg_dict.get('state', 'active') != 'active' or pkg_dict.get(
+                'private', False
+            ):
+                click.secho(f'"{title}" is inactive or private; ignoring', fg='yellow')
+                continue
 
-        client = DataciteClient()
+            metadata_dict = build_metadata_dict(pkg_dict)
+            xml_dict = build_xml_dict(metadata_dict)
 
-        same = client.check_for_update(record.identifier, xml_dict)
-        if not same:
-            try:
+            if client.check_for_update(record.identifier, xml_dict):
+                click.secho(f'"{title}" is already up to date', fg='green')
+            else:
                 client.set_metadata(record.identifier, xml_dict)
                 click.secho(f'Updated "{title}"', fg='green')
-            except DataCiteError as e:
-                click.secho(
-                    f'Error while updating "{title}" (DOI {record.identifier}): {e})',
-                    fg='red',
-                )
-        else:
-            click.secho(f'"{title}" is already up to date', fg='green')
+        except Exception as e:  # noqa: BLE001
+            # one broken dataset must not stop the rest of the run
+            click.secho(
+                f'Error while updating "{title}" (DOI {record.identifier}): {e}',
+                fg='red',
+            )

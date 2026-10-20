@@ -267,3 +267,18 @@ class TestDataciteClientCreation:
             test_mode=True,
             url=DataciteClient.test_url,
         )
+
+
+@pytest.mark.ckan_config('ckanext.doi.prefix', 'testing')
+@pytest.mark.ckan_config('ckan.site_url', 'http://ckan.example.org')
+@pytest.mark.ckan_config('ckanext.doi.site_url', 'http://doi.example.org/')
+@patch('ckanext.doi.lib.api.DOIQuery')
+@patch('ckanext.doi.lib.api.DataCiteMDSClient')
+def test_mint_points_the_doi_at_ckanext_doi_site_url(mock_client_class, mock_crud):
+    mock_crud.read_doi = MagicMock(return_value=MagicMock())
+
+    DataciteClient().mint_doi('testing/abc', 'pkg-1')
+
+    mock_client_class.return_value.doi_post.assert_called_once_with(
+        'testing/abc', 'http://doi.example.org/dataset/pkg-1'
+    )
