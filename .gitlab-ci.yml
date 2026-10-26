@@ -84,7 +84,10 @@ security:pip-audit:
   allow_failure: true
   script:
     - pip install pip-audit
-    - pip-audit
+    # The dependencies declared in pyproject.toml only - without an argument,
+    # pip-audit audits the CI image's own tools (pip-audit's filelock, the
+    # image's setuptools), not this package.
+    - pip-audit .
 
 # Build Python package
 build:package:
